@@ -14,6 +14,7 @@ WebUI *InitManager(char *route_name) {
 		.StyleCount 	= 0,
 
 		.Append 		= wAppendControl,
+		.AppendCSS 		= wAppendCSS
 	};
 
 	return w;
@@ -25,7 +26,20 @@ int wAppendControl(WebUI *w, Control *newc) {
 
 	w->Controls[w->ControlCount] = newc;
 	w->ControlCount++;
-	w->Controls = (Control **)realloc(w->Controls, sizeof(Control) * (w->ControlCount + 1));
+	w->Controls = (Control **)realloc(w->Controls, sizeof(Control *) * (w->ControlCount + 1));
+	w->Controls[w->ControlCount] = NULL;
+
+	return 1;
+}
+
+int wAppendCSS(WebUI *w, CSS *new_css) {
+	if(!w || !new_css)
+		return 0;
+
+	w->Style[w->StyleCount] = new_css;
+	w->StyleCount++;
+	w->Style = (CSS **)realloc(w->Style, sizeof(CSS *) * (w->StyleCount + 1));
+	w->Style[w->StyleCount] = NULL;
 
 	return 1;
 }
