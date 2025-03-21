@@ -17,14 +17,22 @@ CSS txt_test = (CSS){ .Class = "txt_test", .Selector = 1, .Data = (char *[]){
     NULL
 }};
 
+CSS CursorStyle = (CSS){ .Class = "cursor_ptr", .Selector = 1, .Data = (char *[]){
+    "position: absolute",
+    "background-color: #000",
+    "width: 5px",
+    "height: 5px",
+    NULL
+}};
+
 Control Header = (Control){ .Tag = HEAD_TAG, .SubControlCount = 1, .SubControls = (void *[]){
     &(Control){ .Tag = TITLE_TAG, .Text = "Hello World" },
     NULL
 }};
 
 Control Body = (Control){ .Tag = BODY_TAG, .SubControlCount = 1, .SubControls = (void *[]){
-    &(Control){ .Tag = P_TAG, .ID = "nigbob", .Class = "txt_test", .Text = "Hello World!" },
-    &(Control){ .Tag = P_TAG, .ID = "luz", .Class = "txt_test", .Text = "Hi From C" },
+    &(Control){ .Tag = P_TAG, .ID = "luz", .Text = "Hi From C" },
+    &(Control){ .Tag = P_TAG, .ID = "nigbob", .Class = "cursor_ptr", .Text = "" },
     NULL
 }};
 
@@ -46,6 +54,10 @@ char *FindKey(Map *m, const char *key) {
     return NULL;
 }
 
+int PAINT_MODE = 0;
+int LAST_X = 0;
+int LAST_Y = 0;
+
 void test_page(cWS *server, cWR *req, WebRoute *route, int sock) {
     if(req->RequestType.Is(&req->RequestType, "POST")) {
         /* New Control */
@@ -55,19 +67,58 @@ void test_page(cWS *server, cWR *req, WebRoute *route, int sock) {
         String t = newc->Construct(newc, 0, 1);
 
         /* Construct New Control */
+        char *event = ((jKey *)req->Event.arr[1])->value;
         int mouse_x = atoi(((jKey *)req->Event.arr[6])->value);
         int mouse_y = atoi(((jKey *)req->Event.arr[7])->value);
+        printf("%s %d\n", event, *(int *)route->Args[0]);
+        if(strstr(event, "click") && !*(int *)route->Args[0]) {
+            printf("HERE\n");
+            *(int *)route->Args[0] = 1;
+            LAST_X = mouse_x;
+            LAST_Y = mouse_y;
+
+            String test = NewString("{\"update_styles\": { \".cursor_ptr\": {\"margin-left\": \"");
+            test.AppendNum(&test, LAST_X);
+            test.AppendArray(&test, (const char *[]){"px\",", "\"margin-top\": \"", NULL});
+            test.AppendNum(&test, LAST_Y);
+            test.AppendArray(&test, (const char *[]){"px\"}}}", NULL});
+            
+            test.data[test.idx] = '\0';
+            
+            SendResponse(server, sock, OK, DefaultHeaders, ((Map){0}), test.data);
+            test.Destruct(&test);
+            t.Destruct(&t);
+            newc->Destruct(newc, 0, 0);
+            return;
+        } else if(strstr(event, "click")) {
+            *(int *)route->Args[0] = 0;
+            return;
+        }
+
+        if(!PAINT_MODE) {
+            SendResponse(server, sock, OK, DefaultHeaders, ((Map){0}), "fetched");
+            newc->Destruct(newc, 0, 0);
+            t.Destruct(&t);
+            return;
+        }
 
         int scrn_x = atoi(((jKey *)req->Event.arr[8])->value);
         int scrn_y = atoi(((jKey *)req->Event.arr[9])->value);
         
-        printf("Mouse: %d %d | Window Size: %d %d | Final: %d\n", mouse_x, mouse_y, scrn_x, scrn_y);
+        int final_x = LAST_X > mouse_x ? LAST_X - mouse_x : mouse_x - LAST_X;
+        int final_y = LAST_Y > mouse_y ? LAST_Y - mouse_y : mouse_y - LAST_Y;
 
-        String test = NewString("{\"update_styles\": { \".txt_test\": {\"margin-left\": \"");
-        test.AppendNum(&test, mouse_x - (strlen("nigbob") * 3));
+        printf("Mouse: %d %d | Window Size: %d %d | Final: %d:%d\n", mouse_x, mouse_y, scrn_x, scrn_y, final_x, final_y);
+
+        String test = NewString("{\"update_styles\": { \".cursor_ptr\": {\"margin-left\": \"");
+        test.AppendNum(&test, LAST_X);
         test.AppendArray(&test, (const char *[]){"px\",", "\"margin-top\": \"", NULL});
-        test.AppendNum(&test, mouse_y);
-        test.AppendArray(&test, (const char *[]){"px\"}},", "\"replace_elements\": {\"nigbob\": \"", t.data, "\"}}", NULL});
+        test.AppendNum(&test, LAST_Y);
+        test.AppendArray(&test, (const char *[]){"px\", \"width\": \"", NULL});
+        test.AppendNum(&test, final_x);
+        test.AppendArray(&test, (const char *[]){"\", \"height\": \"", NULL});
+        test.AppendNum(&test, final_y);
+        test.AppendArray(&test, (const char *[]){"\"}}}", /* "\"replace_elements\": {\"nigbob\": \"", t.data, "\"}}", */ NULL});
         test.data[test.idx] = '\0';
         
         SendResponse(server, sock, OK, DefaultHeaders, ((Map){0}), test.data);
@@ -78,7 +129,7 @@ void test_page(cWS *server, cWR *req, WebRoute *route, int sock) {
         return;
     }
 
-    char *template = ConstructTemplate((Control *[]){&Header, &Body, NULL}, (CSS *[]){&BodyCSS, NULL}, 1, 0, 0, 0, 0);
+    char *template = ConstructTemplate((Control *[]){&Header, &Body, NULL}, (CSS *[]){&BodyCSS, &CursorStyle, NULL}, 1, 0, 1, 0, 0);
     if(!template)
     {
         printf("[ - ] Error, Unable to construct template...!\n");
@@ -99,7 +150,7 @@ int main() {
     }
 
     WebRoute *routes[] = {
-        CreateRoute("index", "/", test_page),
+        &(WebRoute){ .Name = "index", .Path = "/", .Handler = test_page, .Args = (void *[]){&PAINT_MODE, NULL} },
         NULL
     };
 
