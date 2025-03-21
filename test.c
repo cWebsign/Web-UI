@@ -12,14 +12,19 @@ CSS BodyCSS = (CSS){ .Class = "body", .Selector = 1, .Data = (char *[]){
     NULL
 }};
 
+CSS txt_test = (CSS){ .Class = "txt_test", .Selector = 1, .Data = (char *[]){
+    "color: #000",
+    NULL
+}};
+
 Control Header = (Control){ .Tag = HEAD_TAG, .SubControlCount = 1, .SubControls = (void *[]){
     &(Control){ .Tag = TITLE_TAG, .Text = "Hello World" },
     NULL
 }};
 
 Control Body = (Control){ .Tag = BODY_TAG, .SubControlCount = 1, .SubControls = (void *[]){
-    &(Control){ .Tag = P_TAG, .ID = "nigbob", .Text = "Hello World!" },
-    &(Control){ .Tag = P_TAG, .ID = "lul", .Text = "Hi From C" },
+    &(Control){ .Tag = P_TAG, .ID = "nigbob", .Class = "txt_test", .Text = "Hello World!" },
+    &(Control){ .Tag = P_TAG, .ID = "luz", .Class = "txt_test", .Text = "Hi From C" },
     NULL
 }};
 
@@ -44,14 +49,25 @@ char *FindKey(Map *m, const char *key) {
 void test_page(cWS *server, cWR *req, WebRoute *route, int sock) {
     if(req->RequestType.Is(&req->RequestType, "POST")) {
         /* New Control */
-        Control *newc = CreateControl(P_TAG, NULL, NULL, "nigbob", NULL);
+        Control *newc = CreateControl(P_TAG, NULL, NULL, "Websign :)", NULL);
         free(newc->CSS);
         newc->CSS = NULL;
         String t = newc->Construct(newc, 0, 1);
 
         /* Construct New Control */
-        String test = NewString("{\"replace_elements\": {\"nigbob\": \"");
-        test.AppendArray(&test, (const char *[]){t.data, "\"}}", NULL});
+        int mouse_x = atoi(((jKey *)req->Event.arr[6])->value);
+        int mouse_y = atoi(((jKey *)req->Event.arr[7])->value);
+
+        int scrn_x = atoi(((jKey *)req->Event.arr[8])->value);
+        int scrn_y = atoi(((jKey *)req->Event.arr[9])->value);
+        
+        printf("Mouse: %d %d | Window Size: %d %d | Final: %d\n", mouse_x, mouse_y, scrn_x, scrn_y);
+
+        String test = NewString("{\"update_styles\": { \".txt_test\": {\"margin-left\": \"");
+        test.AppendNum(&test, mouse_x - (strlen("nigbob") * 3));
+        test.AppendArray(&test, (const char *[]){"px\",", "\"margin-top\": \"", NULL});
+        test.AppendNum(&test, mouse_y);
+        test.AppendArray(&test, (const char *[]){"px\"}},", "\"replace_elements\": {\"nigbob\": \"", t.data, "\"}}", NULL});
         test.data[test.idx] = '\0';
         
         SendResponse(server, sock, OK, DefaultHeaders, ((Map){0}), test.data);
