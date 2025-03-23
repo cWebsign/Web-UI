@@ -160,8 +160,8 @@ void test_page(cWS *server, cWR *req, WebRoute *route, int sock) {
             SendResponse(server, sock, OK, DefaultHeaders, ((Map){0}), "Error!");
             return;
         } else if(!strcmp(event, "keydown") && req->Event.idx > 10) {
-            
-            char *mouse_x = ((jKey *)req->Event.arr[10])->value;
+            char *key_pressed = ((jKey *)req->Event.arr[10])->value;
+            // if(!strcmp(key_pressed)  )
         }
 
         String test = NewString("{\"update_styles\": { \".cursor_ptr\": {\"color\": \"#ff0000\", \"position\": \"absolute\"");
