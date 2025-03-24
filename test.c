@@ -141,6 +141,42 @@ int LAST_Y = 0;
 //     free(template);
 // }
 
+char **GetDefaultCSS(CSS *style) {
+    if(!style)
+        return NULL;
+
+    char **arr = (char **)malloc(sizeof(char *) * 1);
+    for(int i = 0; style->Data[i] != NULL; i++) {
+        arr[i] = style->Data[i];
+        arr = (char **)realloc(arr, sizeof(char *) * (i + 1));
+        arr[i] = NULL;
+    }
+
+    return arr;
+}
+
+char **CombineCSS(CSS *style, char **newc) {
+    if(!style)
+        return NULL;
+
+    char **arr = GetDefaultCSS(style);
+    int idx = 0;
+    while(arr[idx] != NULL) idx++;
+
+    for(int i = 0; newc[i] != NULL; i++) {
+        arr[idx] = newc[i];
+        idx++;
+        arr = (char **)realloc(arr, sizeof(char *) * (idx + 1));
+        arr[i] = NULL;
+    }
+
+    if(idx > 0)
+        return arr;
+
+    free(arr);
+    return NULL;
+}
+
 void test_page(cWS *server, cWR *req, WebRoute *route, int sock) {
     if(req->RequestType.Is(&req->RequestType, "POST")) {
         /* New Control */
@@ -158,11 +194,28 @@ void test_page(cWS *server, cWR *req, WebRoute *route, int sock) {
             printf("[ - ] Error, Fetching events...!\n");
             newc->Destruct(newc, 0, 0);
             SendResponse(server, sock, OK, DefaultHeaders, ((Map){0}), "Error!");
+            free(template);
             return;
         } else if(!strcmp(event, "keydown") && req->Event.idx > 10) {
             char *key_pressed = ((jKey *)req->Event.arr[10])->value;
-            // if(!strcmp(key_pressed)  )
+            if(!strcmp(key_pressed) )
         }
+
+        WJS *new_action = CreateNewAction()
+        /*
+        {
+            "replace_elements": {
+                "button_id": ""
+            },
+            "update_styles": {
+                "button_id": {
+                    "background-color": "#000",
+                    "color": "#fff"
+                }
+            }
+        }
+        */
+        UpdateControl(Control *parent, Control *css, char *new_value); // {"replace_element": {"": ""}, "update_styles": {"": ""}}
 
         String test = NewString("{\"update_styles\": { \".cursor_ptr\": {\"color\": \"#ff0000\", \"position\": \"absolute\"");
         test.AppendArray(&test, (const char *[]){",\"margin-top\": \"", mouse_y, "\", \"margin-left\": \"", mouse_x, "\"}},\"replace_elements\": {\"lulz\": \"", t.data, "\"}}", NULL});
@@ -173,6 +226,7 @@ void test_page(cWS *server, cWR *req, WebRoute *route, int sock) {
         test.Destruct(&test);
         t.Destruct(&t);
         newc->Destruct(newc, 0, 0);
+        free(template);
         return;
     }
 
@@ -181,6 +235,7 @@ void test_page(cWS *server, cWR *req, WebRoute *route, int sock) {
     {
         printf("[ - ] Error, Unable to construct template...!\n");
         SendResponse(server, sock, OK, DefaultHeaders, ((Map){0}), "Error");
+        free(template);
         return;
     }
 
