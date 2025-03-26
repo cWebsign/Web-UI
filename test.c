@@ -12,16 +12,60 @@ CSS BodyCSS = (CSS){ .Class = "body", .Selector = 1, .Data = (char *[]){
     NULL
 }};
 
-CSS txt_test = (CSS){ .Class = "txt_test", .Selector = 1, .Data = (char *[]){
-    "color: #000",
+CSS MiniPanelStyle = (CSS){ .Class = "mini_panel", .Selector = 1, .Data = (char *[]){
+    "position: absolute",
+    "margin: auto",
+    "top: 0",
+    "right: 0",
+    "background-color: #021437",
+    "color: #fff",
+    "border: 2px solid black",
+    "border-radius: 15px",
+    "position: absolute",
+    "padding: 10px",
+    "width: 500px",
+    "height: 100%",
     NULL
 }};
 
-CSS CursorStyle = (CSS){ .Class = "cursor_ptr", .Selector = 1, .Data = (char *[]){
-    "position: absolute",
-    "background-color: #000",
-    "width: 5px",
-    "height: 5px",
+CSS NewCtrlBtn = (CSS){ .Class = "new_ctrl_btn", .Selector = 1, .Data = (char *[]){
+    "background-color: green",
+    "border-radius: 15px",
+    "padding: 10px",
+    "width: 385px",
+    "text-align: center",
+    "margin-top: 20px",
+    NULL
+}};
+
+CSS NewCtrlLabel = (CSS){ .Class = "new_ctrl_label", .Selector = 1, .Data = (char *[]){
+    "font-size: 18",
+    NULL
+}};
+
+
+CSS NewCtrlTxtbox = (CSS){ .Class = "new_ctrl_txtbox", .Selector = 1, .Data = (char *[]){
+    "border-radius: 15px",
+    "width: 200px",
+    "padding: 5px",
+    "font-size: 17",
+    NULL
+}};
+
+CSS ControlTable = (CSS){ .Class = "control_table", .Selector = 1, .Data = (char *[]){
+    "margin-top: 10px",
+    "display: grid",
+    "grid-template-columns: 120px 120px 120px 120px",
+    NULL
+}};
+
+CSS InvokeForm = (CSS){ .Class = "form > *", .Selector = 1, .Data = (char *[]){
+    "display: block",
+    NULL
+}};
+
+CSS DisplayInRow = (CSS){ .Class = "display_in_row", .Selector = 1, .Data = (char *[]){
+    "display: inline-block",
     NULL
 }};
 
@@ -31,8 +75,25 @@ Control Header = (Control){ .Tag = HEAD_TAG, .SubControlCount = 1, .SubControls 
 }};
 
 Control Body = (Control){ .Tag = BODY_TAG, .SubControlCount = 1, .SubControls = (void *[]){
-    &(Control){ .Tag = P_TAG, .ID = "lulz", .Class = "cursor_ptr", .Text = "Hi From C" },
-    &(Control){ .Tag = P_TAG, .ID = "nigbob", .CSS = (char *[]){"position: absolute", NULL}, .CSSCount = 1, /* .Class = "cursor_ptr", */ .Text = "" },
+    &(Control){ .Tag = DIV_TAG, .Class = "mini_panel", .SubControlCount = 10, .SubControls = (void *[]){ 
+        &(Control){ .Tag = P_TAG, .CSS = (char *[]){"width: 100%;", "text-align: center;", "align-items: center;", NULL}, .CSSCount = 3, .Text = "Mini UI Panel" },
+        &(Control){ .Tag = P_TAG, .Class = "display_in_row", .Text = "Editing Control: N/A" },
+        &(Control){ .Tag = P_TAG, .Class = "new_ctrl_label", .Text = "Create a New Control" },
+        &(Control){ .Tag = INPUT_TAG, .ID = "new_ctrl_tag_input", .Class = "new_ctrl_txtbox", .Type = "text", .Data = "placeholder=\"Tag\"" },
+        &(Control){ .Tag = INPUT_TAG, .ID = "new_ctrl_class_input", .Class = "new_ctrl_txtbox", .Type = "text", .Data = "placeholder=\"Class\"" },
+        &(Control){ .Tag = INPUT_TAG, .ID = "new_ctrl_id_input", .Class = "new_ctrl_txtbox", .Type = "text", .Data = "placeholder=\"ID\"" },
+        &(Control){ .Tag = INPUT_TAG, .ID = "new_ctrl_text_input", .Class = "new_ctrl_txtbox", .Type = "text", .Data = "placeholder=\"Text\"" },
+        &(Control){ .Tag = P_TAG, .Class = "new_ctrl_btn", .ID = "ws_form", .Text = "Add New Control" },
+        &(Control){ .Tag = DIV_TAG, .Class = "control_table", .SubControlCount = 4, .SubControls = (void *[]){
+            &(Control){ .Tag = DIV_TAG, .Class = "table_row", .Text = "Control Tag" },
+            &(Control){ .Tag = DIV_TAG, .Class = "table_row", .Text = "ID" },
+            &(Control){ .Tag = DIV_TAG, .Class = "table_row", .Text = "Class" },
+            &(Control){ .Tag = DIV_TAG, .Class = "table_row", .Text = "Text" },
+            NULL
+        }},
+        &(Control){ .Tag = P_TAG, .ID = "move_panel", .Text = "Move UI Panel"},
+        NULL
+    }},
     NULL
 }};
 
@@ -53,93 +114,6 @@ char *FindKey(Map *m, const char *key) {
 
     return NULL;
 }
-
-int PAINT_MODE = 0;
-int LAST_X = 0;
-int LAST_Y = 0;
-
-// void test_page(cWS *server, cWR *req, WebRoute *route, int sock) {
-//     if(req->RequestType.Is(&req->RequestType, "POST")) {
-//         /* New Control */
-//         Control *newc = CreateControl(P_TAG, NULL, NULL, "Websign :)", NULL);
-//         free(newc->CSS);
-//         newc->CSS = NULL;
-//         String t = newc->Construct(newc, 0, 1);
-
-//         /* Construct New Control */
-//         char *event = ((jKey *)req->Event.arr[1])->value;
-//         int mouse_x = atoi(((jKey *)req->Event.arr[6])->value);
-//         int mouse_y = atoi(((jKey *)req->Event.arr[7])->value);
-//         printf("%s %d\n", event, *(int *)route->Args[0]);
-//         if(strstr(event, "click") && !*(int *)route->Args[0]) {
-//             printf("HERE\n");
-//             *(int *)route->Args[0] = 1;
-//             LAST_X = mouse_x;
-//             LAST_Y = mouse_y;
-
-//             String test = NewString("{\"update_styles\": { \".cursor_ptr\": {\"margin-left\": \"");
-//             test.AppendNum(&test, LAST_X);
-//             test.AppendArray(&test, (const char *[]){"px\",", "\"margin-top\": \"", NULL});
-//             test.AppendNum(&test, LAST_Y);
-//             test.AppendArray(&test, (const char *[]){"px\"}}}", NULL});
-            
-//             test.data[test.idx] = '\0';
-            
-//             SendResponse(server, sock, OK, DefaultHeaders, ((Map){0}), test.data);
-//             test.Destruct(&test);
-//             t.Destruct(&t);
-//             newc->Destruct(newc, 0, 0);
-//             return;
-//         } else if(strstr(event, "click")) {
-//             *(int *)route->Args[0] = 0;
-//             return;
-//         }
-
-//         if(!PAINT_MODE) {
-//             SendResponse(server, sock, OK, DefaultHeaders, ((Map){0}), "fetched");
-//             newc->Destruct(newc, 0, 0);
-//             t.Destruct(&t);
-//             return;
-//         }
-
-//         int scrn_x = atoi(((jKey *)req->Event.arr[8])->value);
-//         int scrn_y = atoi(((jKey *)req->Event.arr[9])->value);
-        
-//         int final_x = LAST_X > mouse_x ? LAST_X - mouse_x : mouse_x - LAST_X;
-//         int final_y = LAST_Y > mouse_y ? LAST_Y - mouse_y : mouse_y - LAST_Y;
-
-//         printf("Mouse: %d %d | Window Size: %d %d | Final: %d:%d\n", mouse_x, mouse_y, scrn_x, scrn_y, final_x, final_y);
-
-//         String test = NewString("{\"update_styles\": { \".cursor_ptr\": {\"margin-left\": \"");
-//         test.AppendNum(&test, LAST_X);
-//         test.AppendArray(&test, (const char *[]){"px\",", "\"margin-top\": \"", NULL});
-//         test.AppendNum(&test, LAST_Y);
-//         test.AppendArray(&test, (const char *[]){"px\", \"width\": \"", NULL});
-//         test.AppendNum(&test, final_x);
-//         test.AppendArray(&test, (const char *[]){"\", \"height\": \"", NULL});
-//         test.AppendNum(&test, final_y);
-//         test.AppendArray(&test, (const char *[]){"\"}}}", /* "\"replace_elements\": {\"nigbob\": \"", t.data, "\"}}", */ NULL});
-//         test.data[test.idx] = '\0';
-        
-//         SendResponse(server, sock, OK, DefaultHeaders, ((Map){0}), test.data);
-        
-//         test.Destruct(&test);
-//         t.Destruct(&t);
-//         newc->Destruct(newc, 0, 0);
-//         return;
-//     }
-
-//     char *template = ConstructTemplate((Control *[]){&Header, &Body, NULL}, (CSS *[]){&BodyCSS, &CursorStyle, NULL}, 1, 0, 1, 0, 0);
-//     if(!template)
-//     {
-//         printf("[ - ] Error, Unable to construct template...!\n");
-//         SendResponse(server, sock, OK, DefaultHeaders, ((Map){0}), "Error");
-//         return;
-//     }
-
-//     SendResponse(server, sock, OK, DefaultHeaders, ((Map){0}), template);
-//     free(template);
-// }
 
 char **GetDefaultCSS(CSS *style) {
     if(!style)
@@ -177,73 +151,308 @@ char **CombineCSS(CSS *style, char **newc) {
     return NULL;
 }
 
-void test_page(cWS *server, cWR *req, WebRoute *route, int sock) {
-    if(req->RequestType.Is(&req->RequestType, "POST")) {
-        /* New Control */
-        Control *newc = CreateControl(P_TAG, NULL, NULL, "Hi From cWebsign :)", NULL);
-        free(newc->CSS);
-        newc->CSS = NULL;
-        String t = newc->Construct(newc, 0, 1);
+int isClicked(Map event, char *id) {
+    if(!event.arr)
+        return 0;
 
-        /* Construct New Control */
-        char *event = ((jKey *)req->Event.arr[1])->value;
-        char *mouse_x = ((jKey *)req->Event.arr[6])->value;
-        char *mouse_y = ((jKey *)req->Event.arr[7])->value;
-        printf("Clicked Position %s:%s\n", mouse_x, mouse_y);
-        if(!strcmp(event, "click") && !atoi(mouse_x) && !atoi(mouse_y)) {
-            printf("[ - ] Error, Fetching events...!\n");
-            newc->Destruct(newc, 0, 0);
-            SendResponse(server, sock, OK, DefaultHeaders, ((Map){0}), "Error!");
-            free(template);
-            return;
-        } else if(!strcmp(event, "keydown") && req->Event.idx > 10) {
-            char *key_pressed = ((jKey *)req->Event.arr[10])->value;
-            if(!strcmp(key_pressed) )
+    if(!strcmp(((jKey *)event.arr[1])->value, "click") && !strcmp(((jKey *)event.arr[3])->value, id))
+        return 1;
+
+    return 0;
+}
+
+int isKeyPressed(Map event, char *key, char *on_element_id) {
+    if(!event.arr)
+        return 0;
+
+    return (!on_element_id ? !strcmp(((jKey *)event.arr[1])->value, "keyup") && !strcmp(event.arr[10], key) : !strcmp(((jKey *)event.arr[1])->value, "keyup") && !strcmp(event.arr[10], key) && !strcmp(event.arr[3], on_element_id));
+}
+
+/*
+*/
+void UpdateUI(cWS *server, cWR *req, Control *new_content, Control **controls, CSS **style) {
+    String resp = NewString("{");
+
+    if(new_content) {
+        resp.AppendString(&resp, "\"new_body_content\": \"");
+
+        String element = new_content->Construct(new_content, 0, 1);
+
+        String__ReplaceChar(&element, '"', "'");
+        while(element.FindChar(&element, '\t') != -1)
+            element.Trim(&element, '\t');
+
+        element.data[element.idx] = '\0';
+        resp.AppendArray(&resp, (const char *[]){element.data, "\"", NULL});
+        element.Destruct(&element);
+    }
+
+    if(controls) {
+        if(new_content) resp.AppendString(&resp, ",");
+        resp.AppendString(&resp, "\"replace_elements\": {");
+        for(int i = 0; controls[i] != NULL; i++) {
+            if(!controls[i])
+                break;
+
+            String element = controls[i]->Construct(controls[i], 0, 1);
+            String__ReplaceChar(&element, '"', "'");
+
+            element.data[element.idx] = '\0';
+            resp.AppendArray(&resp, (const char *[]){"\"", controls[i]->ID, "\": \"", element.data, "\"", NULL});
+            element.Destruct(&element);
+
+            if(controls[i + 1])
+                resp.AppendString(&resp, ",");
         }
+        resp.AppendString(&resp, "}");
+    }
 
-        WJS *new_action = CreateNewAction()
-        /*
-        {
-            "replace_elements": {
-                "button_id": ""
-            },
-            "update_styles": {
-                "button_id": {
-                    "background-color": "#000",
-                    "color": "#fff"
-                }
+    if(style) {
+        if(controls) resp.AppendString(&resp, ",");
+        resp.AppendString(&resp, "\"update_styles\": {");
+        for(int i = 0; style[i] != NULL; i++) {
+            resp.AppendArray(&resp, (const char *[]){"\"", (style[i]->Selector ? "." : NULL), NULL});
+            resp.AppendArray(&resp, (const char *[]){style[i]->Class, "\": {", NULL});
+            for(int c = 0; style[i]->Data[c] != NULL; c++) {
+                String buff = NewString(style[i]->Data[c]);
+                Array a = NewArray(NULL);
+                a.Merge(&a, (void **)buff.Split(&buff, ":"));
+                if(a.idx < 2)
+                    break;
+
+                buff.Set(&buff, a.arr[1]);
+                buff.TrimAt(&buff, 0);
+                resp.AppendArray(&resp, (const char *[]){"\"", a.arr[0], "\": \"", buff.data, "\"", NULL});
+                if(style[i]->Data[c + 1])
+                    resp.AppendString(&resp, ",");
+
+                buff.Destruct(&buff);
+                a.Destruct(&a);
             }
+            
+            resp.AppendString(&resp, "}");
+            if(style[i + 1])
+                resp.AppendString(&resp, ",");
         }
-        */
-        UpdateControl(Control *parent, Control *css, char *new_value); // {"replace_element": {"": ""}, "update_styles": {"": ""}}
+        resp.AppendString(&resp, "}");
+    }
 
-        String test = NewString("{\"update_styles\": { \".cursor_ptr\": {\"color\": \"#ff0000\", \"position\": \"absolute\"");
-        test.AppendArray(&test, (const char *[]){",\"margin-top\": \"", mouse_y, "\", \"margin-left\": \"", mouse_x, "\"}},\"replace_elements\": {\"lulz\": \"", t.data, "\"}}", NULL});
-        test.data[test.idx] = '\0';
+    resp.AppendString(&resp, "}");
+    resp.data[resp.idx] = '\0';
+    printf("%s\n", resp.data);
+    SendResponse(server, req->Socket, OK, DefaultHeaders, ((Map){}), resp.data);
+    resp.Destruct(&resp);
+}
+
+void SendSuccessNULL(cWS *server, cWR *req) {
+    SendResponse(server, req->Socket, OK, DefaultHeaders, ((Map){0}), "fetched");
+}
+
+typedef struct Painter {
+    Control     *Control;
+    CSS         *Style;
+    int         Paint;
+    int         Action; // 1 = click, 2 = key
+    int         Key;
+    struct {
+        int x, y;
+    } Position, Mouse;
+} Painter;
+
+typedef Array ControlArray;
+ControlArray Controls;
+Painter p;
+
+int MOVE_PANEL = 0;
+
+Control *SetupTableRow(const char *text) {
+    String r = NewString(text);
+    r.data[r.idx] = '\0';
+    Control *newc = CreateControl(DIV_TAG, "table_row", NULL, r.data, NULL);
+    
+    free(newc->SubControls);
+    newc->SubControls = NULL;
+    free(newc->CSS);
+    newc->CSS = NULL;
+
+    r.Destruct(&r);
+    return newc;
+}
+
+Array AllControls(WebRoute *route) {
+    Array n = NewArray(NULL);
+    n.Append(&n, SetupTableRow("Control Tag"));
+    n.Append(&n, SetupTableRow("ID"));
+    n.Append(&n, SetupTableRow("Class"));
+    n.Append(&n, SetupTableRow("Text"));
+
+    if(((Array *)route->Args[1])->idx > 0) {
+        for(int i = 0; ((Array *)route->Args[1])->idx; i++) {
+            if(!((Array *)route->Args[1])->arr[i])
+                break;
+
+                
+            n.Append(&n, SetupTableRow(FindTag((Control *)((Array *)route->Args[1])->arr[i])));
+            n.Append(&n, SetupTableRow(((Control *)((Array *)route->Args[1])->arr[i])->Class));
+            n.Append(&n, SetupTableRow(((Control *)((Array *)route->Args[1])->arr[i])->ID));
+            n.Append(&n, SetupTableRow(((Control *)((Array *)route->Args[1])->arr[i])->Text));
+        }
         
-        SendResponse(server, sock, OK, DefaultHeaders, ((Map){0}), test.data);
-        
-        test.Destruct(&test);
-        t.Destruct(&t);
-        newc->Destruct(newc, 0, 0);
-        free(template);
+        return n;
+    } else {
+        n.Append(&n, SetupTableRow("NULL"));
+        n.Append(&n, SetupTableRow("NULL"));
+        n.Append(&n, SetupTableRow("NULL"));
+        n.Append(&n, SetupTableRow("NULL"));
+    }
+
+    return n;
+}
+
+void UpdatePainter(Painter *p) {
+    if(!p)
+        return;
+
+    if(!p->Mouse.x || !p->Mouse.y) {
+        printf("[ - ] Error, Corrupted Event....!\n");
         return;
     }
 
-    char *template = ConstructTemplate((Control *[]){&Header, &Body, NULL}, (CSS *[]){&BodyCSS, &CursorStyle, NULL}, 1, 0, 0, 1, 0);
+    printf("Action: %s | X: %d | Y: %d\n", p->Action == 1 ? "Click" : "Keypress", p->Mouse.x, p->Mouse.y);
+    if(!p->Paint && p->Action == 1) {
+        p->Paint = 1;
+    } else if(p->Paint && p->Action == 1) {
+        // Update Control
+    }
+
+    printf("Updating....\n");
+}
+
+void test_page(cWS *server, cWR *req, WebRoute *route) {
+    Painter p = *(Painter *)route->Args[0];
+    if(req->RequestType.Is(&req->RequestType, "POST")) {
+        p.Action = (!strcmp(((jKey *)req->Event.arr[1])->value, "click") ? 1 : (!strcmp(((jKey *)req->Event.arr[1])->value, "keydown") ? 2 : 0));
+        p.Mouse.x = atoi(((jKey *)req->Event.arr[7])->value);
+        p.Mouse.y = atoi(((jKey *)req->Event.arr[8])->value);
+
+        if(req->Event.idx > 20 && isClicked(req->Event, "ws_form")) {
+            char *new_ctrl_tag = FindKey(&req->Event, "new_ctrl_tag_input");
+            char *new_ctrl_class = FindKey(&req->Event, "new_ctrl_class_input");
+            char *new_ctrl_id = FindKey(&req->Event, "new_ctrl_id_input");
+            char *new_ctrl_text = FindKey(&req->Event, "new_ctrl_text_input");
+
+            printf(
+                "%s | %s | %s | %s\n", 
+                decode_input_symbols(new_ctrl_tag), 
+                decode_input_symbols(new_ctrl_class), 
+                decode_input_symbols(new_ctrl_id), 
+                decode_input_symbols(new_ctrl_text)
+            );
+
+            Control *newc = CreateControl(FindTagType(new_ctrl_tag), !strcmp(new_ctrl_class, "null") ? NULL : new_ctrl_class, new_ctrl_id, new_ctrl_text, NULL);
+            free(newc->SubControls);
+            newc->SubControls = NULL;
+            free(newc->CSS);
+            newc->CSS = NULL;
+
+            ((Painter *)route->Args[0])->Control = newc;
+            ((Array *)route->Args[1])->Append((Array *)route->Args[1], newc);
+
+            // SendSuccessNULL(server, req);
+            ((Array *)route->Args[1])->arr[((Array *)route->Args[1])->idx] = NULL;
+
+            Control *temp = stack_to_heap(Body);
+
+            Array controls = AllControls(route);
+            if(controls.idx > 0) {
+                ((Control *)((Control *)temp->SubControls[0])->SubControls[8])->SubControls = controls.arr;
+                ((Control *)((Control *)temp->SubControls[0])->SubControls[8])->SubControlCount = controls.idx;
+            }
+            controls.arr[controls.idx] = NULL;
+
+            if(((Array *)route->Args[1])->idx > 0) {
+                for(int i = 0; i < ((Array *)route->Args[1])->idx; i++)
+                    temp->Append(temp, ((Array *)route->Args[1])->arr[i]);
+            }
+            
+            temp->SubControls[temp->SubControlCount] = NULL;
+
+            UpdateUI(server, req, temp, NULL, NULL);
+            return;
+        } else if(isKeyPressed(req->Event, "q", "new_ctrl_class_input")) {
+            SendSuccessNULL(server, req);
+            return;
+        } else if(isClicked(req->Event, "move_panel") && !*(int *)route->Args[2]) {
+            *(int *)route->Args[2] = 1;
+        } else if(*(int *)route->Args[2]) {
+            CSS *Pos = CreateCSS(MiniPanelStyle.Class, 1, (char **)MiniPanelStyle.Data);
+            AppendDesign(Pos, CreateString((const char *[]){"margin-top: ", ((jKey *)req->Event.arr[7])->value, "px", NULL}));
+            AppendDesign(Pos, CreateString((const char *[]){"margin-left: ", ((jKey *)req->Event.arr[8])->value, "px", NULL}));
+            UpdateUI(server, req, NULL, NULL, (CSS *[]){Pos, NULL});
+
+            *(int *)route->Args[2] = 0;
+            return;
+        }
+
+        UpdatePainter(&p);
+        SendSuccessNULL(server, req);
+        return;
+    }
+
+    Control *temp = stack_to_heap(Body);
+    temp->SubControls[temp->SubControlCount] = NULL;
+
+    Array controls = AllControls(route);
+    if(controls.idx > 0) {
+        ((Control *)((Control *)temp->SubControls[0])->SubControls[8])->SubControls = controls.arr;
+        ((Control *)((Control *)temp->SubControls[0])->SubControls[8])->SubControlCount = controls.idx;
+    }
+    controls.arr[controls.idx] = NULL;
+
+    if(((Array *)route->Args[1])->idx > 0) {
+        for(int i = 0; i < ((Array *)route->Args[1])->idx; i++)
+            temp->Append(temp, ((Array *)route->Args[1])->arr[i]);
+    }
+
+    /* Send Default Template UI */
+    char *template = ConstructTemplate(
+        (Control *[]){&Header, temp, NULL}, 
+        (CSS *[]){
+            &BodyCSS, 
+            &MiniPanelStyle, 
+            &NewCtrlBtn, 
+            &DisplayInRow, 
+            &ControlTable, 
+            &NewCtrlLabel, 
+            &NewCtrlTxtbox, 
+            &InvokeForm,
+            NULL
+        }, 
+        1, 0, 0, 0, 1, 0
+    );
+
     if(!template)
     {
         printf("[ - ] Error, Unable to construct template...!\n");
-        SendResponse(server, sock, OK, DefaultHeaders, ((Map){0}), "Error");
+        SendResponse(server, req->Socket, OK, DefaultHeaders, ((Map){0}), "Error");
         free(template);
         return;
     }
 
-    SendResponse(server, sock, OK, DefaultHeaders, ((Map){0}), template);
+    SendResponse(server, req->Socket, OK, DefaultHeaders, ((Map){0}), template);
     free(template);
+
+    // for(int i = 0; i < temp->SubControlCount; i++) {
+    //     ((Control *)temp->SubControls[i])->Destruct(temp->SubControls[i], 1, 1);
+    // }
+    if(temp->SubControlCount)
+        DestructControls(temp);
 }
 
 int main() {
+    p = (Painter){ .Mouse = {}, .Position = {} };
+    Controls = NewArray(NULL);
+
     cWS *server = StartWebServer(NewString(""), 80, 0);
     if(!server)
     {
@@ -252,7 +461,7 @@ int main() {
     }
 
     WebRoute *routes[] = {
-        &(WebRoute){ .Name = "index", .Path = "/", .Handler = test_page, .Args = (void *[]){&PAINT_MODE, NULL} },
+        &(WebRoute){ .Name = "index", .Path = "/", .Handler = test_page, .Args = (void *[]){&p, &Controls, &MOVE_PANEL, NULL} },
         NULL
     };
 
