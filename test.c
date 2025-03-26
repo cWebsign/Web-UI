@@ -336,17 +336,23 @@ void test_page(cWS *server, cWR *req, WebRoute *route) {
         p.Mouse.y = atoi(((jKey *)req->Event.arr[8])->value);
 
         if(req->Event.idx > 20 && isClicked(req->Event, "ws_form")) {
-            char *new_ctrl_tag = FindKey(&req->Event, "new_ctrl_tag_input");
-            char *new_ctrl_class = FindKey(&req->Event, "new_ctrl_class_input");
-            char *new_ctrl_id = FindKey(&req->Event, "new_ctrl_id_input");
-            char *new_ctrl_text = FindKey(&req->Event, "new_ctrl_text_input");
+            /* 
+                Add new control button
+
+                Creates new control and adds to the control array as the page body (LIVE PREVIEW)
+                then update the page body
+            */
+            char *new_ctrl_tag = decode_input_symbols(FindKey(&req->Event, "new_ctrl_tag_input"));
+            char *new_ctrl_class = decode_input_symbols(FindKey(&req->Event, "new_ctrl_class_input"));
+            char *new_ctrl_id = decode_input_symbols(FindKey(&req->Event, "new_ctrl_id_input"));
+            char *new_ctrl_text = decode_input_symbols(FindKey(&req->Event, "new_ctrl_text_input"));
 
             printf(
                 "%s | %s | %s | %s\n", 
-                decode_input_symbols(new_ctrl_tag), 
-                decode_input_symbols(new_ctrl_class), 
-                decode_input_symbols(new_ctrl_id), 
-                decode_input_symbols(new_ctrl_text)
+                new_ctrl_tag,
+                new_ctrl_class,
+                new_ctrl_id,
+                new_ctrl_text
             );
 
             Control *newc = CreateControl(FindTagType(new_ctrl_tag), !strcmp(new_ctrl_class, "null") ? NULL : new_ctrl_class, new_ctrl_id, new_ctrl_text, NULL);
@@ -362,7 +368,6 @@ void test_page(cWS *server, cWR *req, WebRoute *route) {
             ((Array *)route->Args[1])->arr[((Array *)route->Args[1])->idx] = NULL;
 
             Control *temp = stack_to_heap(Body);
-
             Array controls = AllControls(route);
             if(controls.idx > 0) {
                 ((Control *)((Control *)temp->SubControls[0])->SubControls[8])->SubControls = controls.arr;
@@ -378,13 +383,22 @@ void test_page(cWS *server, cWR *req, WebRoute *route) {
             temp->SubControls[temp->SubControlCount] = NULL;
 
             UpdateUI(server, req, temp, NULL, NULL);
-            return;
-        } else if(isKeyPressed(req->Event, "q", "new_ctrl_class_input")) {
-            SendSuccessNULL(server, req);
+            
+            if(temp->SubControlCount)
+                DestructControls(temp);
+
+            free(new_ctrl_tag);
+            free(new_ctrl_class);
+            free(new_ctrl_id);
+            free(new_ctrl_text);
+
+            controls.Destruct(&controls);
             return;
         } else if(isClicked(req->Event, "move_panel") && !*(int *)route->Args[2]) {
+            /* Move Panel text-button, Turn on PANEL_MOVEMENT */
             *(int *)route->Args[2] = 1;
         } else if(*(int *)route->Args[2]) {
+            /* New Panel Position Clicked, Move panel by changing CSS using margin-top and margin-left */
             CSS *Pos = CreateCSS(MiniPanelStyle.Class, 1, (char **)MiniPanelStyle.Data);
             AppendDesign(Pos, CreateString((const char *[]){"margin-top: ", ((jKey *)req->Event.arr[7])->value, "px", NULL}));
             AppendDesign(Pos, CreateString((const char *[]){"margin-left: ", ((jKey *)req->Event.arr[8])->value, "px", NULL}));
@@ -399,9 +413,11 @@ void test_page(cWS *server, cWR *req, WebRoute *route) {
         return;
     }
 
+    /* Retrieve body */
     Control *temp = stack_to_heap(Body);
     temp->SubControls[temp->SubControlCount] = NULL;
 
+    /* Retrieve body control list, append them to the body AFTER Websign's mini web panel */
     Array controls = AllControls(route);
     if(controls.idx > 0) {
         ((Control *)((Control *)temp->SubControls[0])->SubControls[8])->SubControls = controls.arr;
@@ -442,11 +458,10 @@ void test_page(cWS *server, cWR *req, WebRoute *route) {
     SendResponse(server, req->Socket, OK, DefaultHeaders, ((Map){0}), template);
     free(template);
 
-    // for(int i = 0; i < temp->SubControlCount; i++) {
-    //     ((Control *)temp->SubControls[i])->Destruct(temp->SubControls[i], 1, 1);
-    // }
     if(temp->SubControlCount)
         DestructControls(temp);
+    
+    controls.Destruct(&controls);
 }
 
 int main() {
