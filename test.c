@@ -75,8 +75,8 @@ Control Header = (Control){ .Tag = HEAD_TAG, .SubControlCount = 1, .SubControls 
 }};
 
 Control Body = (Control){ .Tag = BODY_TAG, .SubControlCount = 1, .SubControls = (void *[]){
-    &(Control){ .Tag = DIV_TAG, .Class = "mini_panel", .SubControlCount = 10, .SubControls = (void *[]){ 
-        &(Control){ .Tag = P_TAG, .CSS = (char *[]){"width: 100%;", "text-align: center;", "align-items: center;", NULL}, .CSSCount = 3, .Text = "Mini UI Panel" },
+    &(Control){ .Tag = DIV_TAG, .Class = "mini_panel", .SubControlCount = 9, .SubControls = (void *[]){ 
+        &(Control){ .Tag = P_TAG, .Text = "Mini UI Panel" },
         &(Control){ .Tag = P_TAG, .Class = "display_in_row", .Text = "Editing Control: N/A" },
         &(Control){ .Tag = P_TAG, .Class = "new_ctrl_label", .Text = "Create a New Control" },
         &(Control){ .Tag = INPUT_TAG, .ID = "new_ctrl_tag_input", .Class = "new_ctrl_txtbox", .Type = "text", .Data = "placeholder=\"Tag\"" },
@@ -84,13 +84,7 @@ Control Body = (Control){ .Tag = BODY_TAG, .SubControlCount = 1, .SubControls = 
         &(Control){ .Tag = INPUT_TAG, .ID = "new_ctrl_id_input", .Class = "new_ctrl_txtbox", .Type = "text", .Data = "placeholder=\"ID\"" },
         &(Control){ .Tag = INPUT_TAG, .ID = "new_ctrl_text_input", .Class = "new_ctrl_txtbox", .Type = "text", .Data = "placeholder=\"Text\"" },
         &(Control){ .Tag = P_TAG, .Class = "new_ctrl_btn", .ID = "ws_form", .Text = "Add New Control" },
-        &(Control){ .Tag = DIV_TAG, .Class = "control_table", .SubControlCount = 4, .SubControls = (void *[]){
-            &(Control){ .Tag = DIV_TAG, .Class = "table_row", .Text = "Control Tag" },
-            &(Control){ .Tag = DIV_TAG, .Class = "table_row", .Text = "ID" },
-            &(Control){ .Tag = DIV_TAG, .Class = "table_row", .Text = "Class" },
-            &(Control){ .Tag = DIV_TAG, .Class = "table_row", .Text = "Text" },
-            NULL
-        }},
+        &(Control){ .Tag = DIV_TAG, .Class = "control_table" },
         &(Control){ .Tag = P_TAG, .ID = "move_panel", .Text = "Move UI Panel"},
         NULL
     }},
@@ -175,7 +169,6 @@ void UpdateUI(cWS *server, cWR *req, Control *new_content, Control **controls, C
 
     if(new_content) {
         resp.AppendString(&resp, "\"new_body_content\": \"");
-
         String element = new_content->Construct(new_content, 0, 1);
 
         String__ReplaceChar(&element, '"', "'");
@@ -244,6 +237,25 @@ void UpdateUI(cWS *server, cWR *req, Control *new_content, Control **controls, C
     resp.Destruct(&resp);
 }
 
+void SendUIControl(cWS *server, cWR* req, Control *c) {
+    String n = NewString("{\"new_body_content\": \"");
+
+    String buff = c->Construct(c, 0, 1);
+    while(buff.FindChar(&buff, '\t') != -1)
+        buff.Trim(&buff, '\t');
+
+    while(buff.FindChar(&buff, '\n') != -1)
+        buff.Trim(&buff, '\n');
+
+    String__ReplaceChar(&buff, '"', "'");
+    n.AppendArray(&n, (const char *[]){buff.data, "\"}", NULL});
+
+    n.data[n.idx] = '\0';
+    SendResponse(server, req->Socket, OK, DefaultHeaders, ((Map){}), n.data);
+    buff.Destruct(&buff);
+    n.Destruct(&n);
+}
+
 void SendSuccessNULL(cWS *server, cWR *req) {
     SendResponse(server, req->Socket, OK, DefaultHeaders, ((Map){0}), "fetched");
 }
@@ -261,11 +273,17 @@ typedef struct Painter {
 
 typedef Array ControlArray;
 ControlArray Controls;
+ControlArray TableRows;
 Painter p;
+
+Control *MainBody;
 
 int MOVE_PANEL = 0;
 
 Control *SetupTableRow(const char *text) {
+    if(!text)
+        return CreateControl(DIV_TAG, "table_row", NULL, "NULL", NULL);
+
     String r = NewString(text);
     r.data[r.idx] = '\0';
     Control *newc = CreateControl(DIV_TAG, "table_row", NULL, r.data, NULL);
@@ -279,23 +297,23 @@ Control *SetupTableRow(const char *text) {
     return newc;
 }
 
-Array AllControls(WebRoute *route) {
+Array AllControls() {
     Array n = NewArray(NULL);
     n.Append(&n, SetupTableRow("Control Tag"));
     n.Append(&n, SetupTableRow("ID"));
     n.Append(&n, SetupTableRow("Class"));
     n.Append(&n, SetupTableRow("Text"));
 
-    if(((Array *)route->Args[1])->idx > 0) {
-        for(int i = 0; ((Array *)route->Args[1])->idx; i++) {
-            if(!((Array *)route->Args[1])->arr[i])
+    if(Controls.idx > 0) {
+        for(int i = 0; Controls.idx; i++) {
+            if(!Controls.arr[i])
                 break;
 
                 
-            n.Append(&n, SetupTableRow(FindTag((Control *)((Array *)route->Args[1])->arr[i])));
-            n.Append(&n, SetupTableRow(((Control *)((Array *)route->Args[1])->arr[i])->Class));
-            n.Append(&n, SetupTableRow(((Control *)((Array *)route->Args[1])->arr[i])->ID));
-            n.Append(&n, SetupTableRow(((Control *)((Array *)route->Args[1])->arr[i])->Text));
+            n.Append(&n, SetupTableRow(FindTag(Controls.arr[i])));
+            n.Append(&n, SetupTableRow(!((Control *)Controls.arr[i])->Class ? NULL : ((Control *)Controls.arr[i])->Class));
+            n.Append(&n, SetupTableRow(!((Control *)Controls.arr[i])->ID ? NULL : ((Control *)Controls.arr[i])->ID));
+            n.Append(&n, SetupTableRow(!((Control *)Controls.arr[i])->Text ? NULL : ((Control *)Controls.arr[i])->Text));
         }
         
         return n;
@@ -342,10 +360,10 @@ void test_page(cWS *server, cWR *req, WebRoute *route) {
                 Creates new control and adds to the control array as the page body (LIVE PREVIEW)
                 then update the page body
             */
-            char *new_ctrl_tag = decode_input_symbols(FindKey(&req->Event, "new_ctrl_tag_input"));
-            char *new_ctrl_class = decode_input_symbols(FindKey(&req->Event, "new_ctrl_class_input"));
-            char *new_ctrl_id = decode_input_symbols(FindKey(&req->Event, "new_ctrl_id_input"));
-            char *new_ctrl_text = decode_input_symbols(FindKey(&req->Event, "new_ctrl_text_input"));
+            char *new_ctrl_tag = FindKey(&req->Event, "new_ctrl_tag_input");
+            char *new_ctrl_class = FindKey(&req->Event, "new_ctrl_class_input");
+            char *new_ctrl_id = FindKey(&req->Event, "new_ctrl_id_input");
+            char *new_ctrl_text = FindKey(&req->Event, "new_ctrl_text_input");
 
             printf(
                 "%s | %s | %s | %s\n", 
@@ -355,53 +373,40 @@ void test_page(cWS *server, cWR *req, WebRoute *route) {
                 new_ctrl_text
             );
 
-            Control *newc = CreateControl(FindTagType(new_ctrl_tag), !strcmp(new_ctrl_class, "null") ? NULL : new_ctrl_class, new_ctrl_id, new_ctrl_text, NULL);
+            Control *newc = CreateControl(
+                FindTagType(new_ctrl_tag), 
+                !strcmp(new_ctrl_class, "null") ? NULL : new_ctrl_class, 
+                !strcmp(new_ctrl_id, "null") ? NULL : new_ctrl_id, 
+                !strcmp(new_ctrl_text, "null") ? NULL : new_ctrl_text, 
+                NULL
+            );
+            if(!newc) {
+                printf("[ - ] Error, Unable to create control...!\n");
+            }
+
             free(newc->SubControls);
             newc->SubControls = NULL;
             free(newc->CSS);
             newc->CSS = NULL;
 
-            ((Painter *)route->Args[0])->Control = newc;
-            ((Array *)route->Args[1])->Append((Array *)route->Args[1], newc);
-
-            // SendSuccessNULL(server, req);
-            ((Array *)route->Args[1])->arr[((Array *)route->Args[1])->idx] = NULL;
-
-            Control *temp = stack_to_heap(Body);
-            Array controls = AllControls(route);
-            if(controls.idx > 0) {
-                ((Control *)((Control *)temp->SubControls[0])->SubControls[8])->SubControls = controls.arr;
-                ((Control *)((Control *)temp->SubControls[0])->SubControls[8])->SubControlCount = controls.idx;
+            if(!((Control *)route->Args[3])->Append((Control *)route->Args[3], newc)) {
+                printf("[ - ] Error, Unable to add control to the body list....!\n");
             }
-            controls.arr[controls.idx] = NULL;
-
-            if(((Array *)route->Args[1])->idx > 0) {
-                for(int i = 0; i < ((Array *)route->Args[1])->idx; i++)
-                    temp->Append(temp, ((Array *)route->Args[1])->arr[i]);
-            }
+            TableRows.Append(&TableRows, SetupTableRow(!strcmp(new_ctrl_tag, "null") ? "N/A" : new_ctrl_tag));
+            TableRows.Append(&TableRows, SetupTableRow(!strcmp(new_ctrl_class, "null") ? "N/A" : new_ctrl_class));
+            TableRows.Append(&TableRows, SetupTableRow(!strcmp(new_ctrl_id, "null") ? "N/A" : new_ctrl_id));
+            TableRows.Append(&TableRows, SetupTableRow(!strcmp(new_ctrl_text, "null") ? "N/A" : new_ctrl_text));
             
-            temp->SubControls[temp->SubControlCount] = NULL;
-
-            UpdateUI(server, req, temp, NULL, NULL);
-            
-            if(temp->SubControlCount)
-                DestructControls(temp);
-
-            free(new_ctrl_tag);
-            free(new_ctrl_class);
-            free(new_ctrl_id);
-            free(new_ctrl_text);
-
-            controls.Destruct(&controls);
+            SendUIControl(server, req, MainBody);
             return;
         } else if(isClicked(req->Event, "move_panel") && !*(int *)route->Args[2]) {
             /* Move Panel text-button, Turn on PANEL_MOVEMENT */
             *(int *)route->Args[2] = 1;
         } else if(*(int *)route->Args[2]) {
             /* New Panel Position Clicked, Move panel by changing CSS using margin-top and margin-left */
-            CSS *Pos = CreateCSS(MiniPanelStyle.Class, 1, (char **)MiniPanelStyle.Data);
-            AppendDesign(Pos, CreateString((const char *[]){"margin-top: ", ((jKey *)req->Event.arr[7])->value, "px", NULL}));
-            AppendDesign(Pos, CreateString((const char *[]){"margin-left: ", ((jKey *)req->Event.arr[8])->value, "px", NULL}));
+            CSS *Pos = CreateCSS(MiniPanelStyle.Class, 1, (const char **)MiniPanelStyle.Data);
+            AppendDesign(Pos, CreateString((char *[]){"margin-top: ", ((jKey *)req->Event.arr[7])->value, "px", NULL}));
+            AppendDesign(Pos, CreateString((char *[]){"margin-left: ", ((jKey *)req->Event.arr[8])->value, "px", NULL}));
             UpdateUI(server, req, NULL, NULL, (CSS *[]){Pos, NULL});
 
             *(int *)route->Args[2] = 0;
@@ -413,26 +418,9 @@ void test_page(cWS *server, cWR *req, WebRoute *route) {
         return;
     }
 
-    /* Retrieve body */
-    Control *temp = stack_to_heap(Body);
-    temp->SubControls[temp->SubControlCount] = NULL;
-
-    /* Retrieve body control list, append them to the body AFTER Websign's mini web panel */
-    Array controls = AllControls(route);
-    if(controls.idx > 0) {
-        ((Control *)((Control *)temp->SubControls[0])->SubControls[8])->SubControls = controls.arr;
-        ((Control *)((Control *)temp->SubControls[0])->SubControls[8])->SubControlCount = controls.idx;
-    }
-    controls.arr[controls.idx] = NULL;
-
-    if(((Array *)route->Args[1])->idx > 0) {
-        for(int i = 0; i < ((Array *)route->Args[1])->idx; i++)
-            temp->Append(temp, ((Array *)route->Args[1])->arr[i]);
-    }
-
     /* Send Default Template UI */
     char *template = ConstructTemplate(
-        (Control *[]){&Header, temp, NULL}, 
+        (Control *[]){&Header, MainBody, NULL}, 
         (CSS *[]){
             &BodyCSS, 
             &MiniPanelStyle, 
@@ -457,16 +445,28 @@ void test_page(cWS *server, cWR *req, WebRoute *route) {
 
     SendResponse(server, req->Socket, OK, DefaultHeaders, ((Map){0}), template);
     free(template);
-
-    if(temp->SubControlCount)
-        DestructControls(temp);
-    
-    controls.Destruct(&controls);
 }
 
 int main() {
-    p = (Painter){ .Mouse = {}, .Position = {} };
     Controls = NewArray(NULL);
+    TableRows = NewArray(NULL);
+    Controls.Append(&Controls, CreateControl(P_TAG, NULL, NULL, "Default Start-up Test", NULL));
+
+    MainBody = stack_to_heap(Body);
+    Array table = AllControls();
+    if(table.idx > 0) {
+        ((Control *)((Control *)MainBody->SubControls[0])->SubControls[8])->SubControls = table.arr;
+        ((Control *)((Control *)MainBody->SubControls[0])->SubControls[8])->SubControlCount = table.idx;
+    }
+
+    if(Controls.idx > 0) {
+        if(Controls.idx > 0) {
+            for(int i = 0; i < Controls.idx; i++)
+                MainBody->Append(MainBody, Controls.arr[i]);
+        }
+    }
+
+    p = (Painter){ .Mouse = {}, .Position = {} };
 
     cWS *server = StartWebServer(NewString(""), 80, 0);
     if(!server)
@@ -476,7 +476,7 @@ int main() {
     }
 
     WebRoute *routes[] = {
-        &(WebRoute){ .Name = "index", .Path = "/", .Handler = test_page, .Args = (void *[]){&p, &Controls, &MOVE_PANEL, NULL} },
+        &(WebRoute){ .Name = "index", .Path = "/", .Handler = test_page, .Args = (void *[]){&p, &Controls, &MOVE_PANEL, MainBody, NULL} },
         NULL
     };
 
