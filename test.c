@@ -75,7 +75,7 @@ Control Header = (Control){ .Tag = HEAD_TAG, .SubControlCount = 1, .SubControls 
 }};
 
 Control Body = (Control){ .Tag = BODY_TAG, .SubControlCount = 1, .SubControls = (void *[]){
-    &(Control){ .Tag = DIV_TAG, .Class = "mini_panel", .SubControlCount = 9, .SubControls = (void *[]){ 
+    &(Control){ .Tag = DIV_TAG, .Class = "mini_panel", .SubControlCount = 11, .SubControls = (void *[]){ 
         &(Control){ .Tag = P_TAG, .Text = "Mini UI Panel" },
         &(Control){ .Tag = P_TAG, .Class = "display_in_row", .Text = "Editing Control: N/A" },
         &(Control){ .Tag = P_TAG, .Class = "new_ctrl_label", .Text = "Create a New Control" },
@@ -83,6 +83,7 @@ Control Body = (Control){ .Tag = BODY_TAG, .SubControlCount = 1, .SubControls = 
         &(Control){ .Tag = INPUT_TAG, .ID = "new_ctrl_class_input", .Class = "new_ctrl_txtbox", .Type = "text", .Data = "placeholder=\"Class\"" },
         &(Control){ .Tag = INPUT_TAG, .ID = "new_ctrl_id_input", .Class = "new_ctrl_txtbox", .Type = "text", .Data = "placeholder=\"ID\"" },
         &(Control){ .Tag = INPUT_TAG, .ID = "new_ctrl_text_input", .Class = "new_ctrl_txtbox", .Type = "text", .Data = "placeholder=\"Text\"" },
+        &(Control){ .Tag = INPUT_TAG, .ID = "new_ctrl_data_input", .Class = "new_ctrl_txtbox", .Type = "text", .Data = "placeholder=\"Data\"" },
         &(Control){ .Tag = P_TAG, .Class = "new_ctrl_btn", .ID = "ws_form", .Text = "Add New Control" },
         &(Control){ .Tag = DIV_TAG, .Class = "control_table" },
         &(Control){ .Tag = P_TAG, .ID = "move_panel", .Text = "Move UI Panel"},
@@ -297,6 +298,16 @@ Control *SetupTableRow(const char *text) {
     return newc;
 }
 
+Control *CreateWSControl(ControlTag tag, const char *sclass, const char *id, const char *text, const char *data) {
+    Control *newc = CreateControl(tag, sclass, id, text, NULL);
+    if(newc->Data) {
+        free(newc->Data);
+    }
+
+    newc->Data = strdup(data);
+    return newc;
+}
+
 Array AllControls() {
     Array n = NewArray(NULL);
     n.Append(&n, SetupTableRow("Control Tag"));
@@ -364,22 +375,25 @@ void test_page(cWS *server, cWR *req, WebRoute *route) {
             char *new_ctrl_class = FindKey(&req->Event, "new_ctrl_class_input");
             char *new_ctrl_id = FindKey(&req->Event, "new_ctrl_id_input");
             char *new_ctrl_text = FindKey(&req->Event, "new_ctrl_text_input");
+            char *new_ctrl_data = decode_input_symbols(FindKey(&req->Event, "new_ctrl_data_input"));
 
             printf(
-                "%s | %s | %s | %s\n", 
+                "%s | %s | %s | %s | %s\n", 
                 new_ctrl_tag,
                 new_ctrl_class,
                 new_ctrl_id,
-                new_ctrl_text
+                new_ctrl_text,
+                new_ctrl_data
             );
 
-            Control *newc = CreateControl(
+            Control *newc = CreateWSControl(
                 FindTagType(new_ctrl_tag), 
-                !strcmp(new_ctrl_class, "null") ? NULL : new_ctrl_class, 
-                !strcmp(new_ctrl_id, "null") ? NULL : new_ctrl_id, 
-                !strcmp(new_ctrl_text, "null") ? NULL : new_ctrl_text, 
-                NULL
+                (!strcmp(new_ctrl_class, "null") ? NULL : new_ctrl_class), 
+                (!strcmp(new_ctrl_id, "null") ? NULL : new_ctrl_id),
+                (!strcmp(new_ctrl_text, "null") ? NULL : new_ctrl_text),
+                (!strcmp(new_ctrl_data, "null") ? NULL : new_ctrl_data)
             );
+
             if(!newc) {
                 printf("[ - ] Error, Unable to create control...!\n");
             }
@@ -455,8 +469,8 @@ int main() {
     MainBody = stack_to_heap(Body);
     Array table = AllControls();
     if(table.idx > 0) {
-        ((Control *)((Control *)MainBody->SubControls[0])->SubControls[8])->SubControls = table.arr;
-        ((Control *)((Control *)MainBody->SubControls[0])->SubControls[8])->SubControlCount = table.idx;
+        ((Control *)((Control *)MainBody->SubControls[0])->SubControls[9])->SubControls = table.arr;
+        ((Control *)((Control *)MainBody->SubControls[0])->SubControls[9])->SubControlCount = table.idx;
     }
 
     if(Controls.idx > 0) {
