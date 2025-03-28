@@ -304,7 +304,18 @@ Control *CreateWSControl(ControlTag tag, const char *sclass, const char *id, con
         free(newc->Data);
     }
 
-    newc->Data = strdup(data);
+    if(strstr(data, ":style")) {
+        printf("HERE\n");
+        String n = NewString(data);
+        n.data[0] = ' ';
+        n.data[n.idx] = '\0';
+        newc->Data = n.data;
+    } else {
+        newc->Data = strdup(data);
+    }
+    
+    // newc->Data = strdup(data);
+
     return newc;
 }
 
@@ -364,6 +375,9 @@ void test_page(cWS *server, cWR *req, WebRoute *route) {
         p.Mouse.x = atoi(((jKey *)req->Event.arr[7])->value);
         p.Mouse.y = atoi(((jKey *)req->Event.arr[8])->value);
 
+        for(int i = 0; i < req->Event.idx; i++) {
+            printf("%s => %s\n", ((jKey *)req->Event.arr[i])->key, ((jKey *)req->Event.arr[i])->value);
+        }
         if(req->Event.idx > 20 && isClicked(req->Event, "ws_form")) {
             /* 
                 Add new control button
@@ -406,15 +420,21 @@ void test_page(cWS *server, cWR *req, WebRoute *route) {
             if(!((Control *)route->Args[3])->Append((Control *)route->Args[3], newc)) {
                 printf("[ - ] Error, Unable to add control to the body list....!\n");
             }
-            TableRows.Append(&TableRows, SetupTableRow(!strcmp(new_ctrl_tag, "null") ? "N/A" : new_ctrl_tag));
-            TableRows.Append(&TableRows, SetupTableRow(!strcmp(new_ctrl_class, "null") ? "N/A" : new_ctrl_class));
-            TableRows.Append(&TableRows, SetupTableRow(!strcmp(new_ctrl_id, "null") ? "N/A" : new_ctrl_id));
-            TableRows.Append(&TableRows, SetupTableRow(!strcmp(new_ctrl_text, "null") ? "N/A" : new_ctrl_text));
+            ((Control *)((Control *)MainBody->SubControls[0])->SubControls[9])->Append(((Control *)((Control *)MainBody->SubControls[0])->SubControls[9]), SetupTableRow(!strcmp(new_ctrl_tag, "null") ? "N/A" : new_ctrl_tag));
+            ((Control *)((Control *)MainBody->SubControls[0])->SubControls[9])->Append(((Control *)((Control *)MainBody->SubControls[0])->SubControls[9]), SetupTableRow(!strcmp(new_ctrl_class, "null") ? "N/A" : new_ctrl_class));
+            ((Control *)((Control *)MainBody->SubControls[0])->SubControls[9])->Append(((Control *)((Control *)MainBody->SubControls[0])->SubControls[9]), SetupTableRow(!strcmp(new_ctrl_id, "null") ? "N/A" : new_ctrl_id));
+            ((Control *)((Control *)MainBody->SubControls[0])->SubControls[9])->Append(((Control *)((Control *)MainBody->SubControls[0])->SubControls[9]), SetupTableRow(!strcmp(new_ctrl_text, "null") ? "N/A" : new_ctrl_text));
             
             SendUIControl(server, req, MainBody);
             return;
-        } else if(isClicked(req->Event, "move_panel") && !*(int *)route->Args[2]) {
+        } else if(!strcmp(req->Event.arr[1], "click")) {
             /* Move Panel text-button, Turn on PANEL_MOVEMENT */
+            printf(
+                "Click Position: %s:%s\n",
+                req->Event.arr[6],
+                req->Event.arr[7]
+            );
+
             *(int *)route->Args[2] = 1;
         } else if(*(int *)route->Args[2]) {
             /* New Panel Position Clicked, Move panel by changing CSS using margin-top and margin-left */
