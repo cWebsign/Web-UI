@@ -378,6 +378,7 @@ void test_page(cWS *server, cWR *req, WebRoute *route) {
         for(int i = 0; i < req->Event.idx; i++) {
             printf("%s => %s\n", ((jKey *)req->Event.arr[i])->key, ((jKey *)req->Event.arr[i])->value);
         }
+        
         if(req->Event.idx > 20 && isClicked(req->Event, "ws_form")) {
             /* 
                 Add new control button
